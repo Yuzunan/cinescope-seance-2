@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import posterAube from "./assets/aube.svg";
 import posterMemoire from "./assets/memoire.svg";
 import posterOrbite from "./assets/orbite.svg";
@@ -22,6 +22,20 @@ export default function App() {
     setFavorites((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]);
   };
 
+  const [ Reservation, setReservation ] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const confirmationRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!selected || !dialogRef) return;
+    dialogRef.current.showModal()
+  },[selected]);
+
+  useEffect(() => {
+      if (!Reservation || !confirmationRef) return;
+      confirmationRef.current.focus()
+  }, [Reservation]);
+
+
   return (
     <>
       <header className="topbar">
@@ -34,6 +48,7 @@ export default function App() {
         </nav>
       </header>
       <main className="page">
+      { Reservation && <p id="confirmation-message" tabIndex="-1" ref={confirmationRef}> {Reservation} </p> }
         <h1>Films à l’affiche</h1>
         <p className="intro">Découvrez la programmation de cette semaine.</p>
         <div className="search-field">
@@ -56,7 +71,7 @@ export default function App() {
                     <h3>{film.title}</h3>
                     <p>{film.genre} · {film.time}</p>
                     <div className="actions">
-                      <div className="booking-trigger fake-button" onClick={() => setSelected(film.title)}>Réserver {film.title}</div>
+                      <button type="button" className="booking-trigger fake-button" onClick={() => setSelected(film.title)}>Réserver {film.title}</button>
                       <button type="button" className="favorite" aria-pressed={isFavorite}
                         aria-label={"Favori : " + film.title} onClick={() => toggleFavorite(film.id)}>
                         <span aria-hidden="true">{isFavorite ? "★" : "☆"}</span>
@@ -74,20 +89,19 @@ export default function App() {
           <p>Le cinéma ouvre trente minutes avant la première séance.</p>
         </section>
         {selectedFilm && (
-          <div className="backdrop">
-            <div className="modal">
+            <dialog onClose={() => setSelected(null)} aria-labelledby="dialog-title" ref={dialogRef}>
               <div className="dialog-heading">
-                <h2>Réserver {selected}</h2>
-                <span className="close" onClick={() => setSelected(null)}>×</span>
+                <h2 tabIndex="-1" id="dialog-title">Réserver {selected}</h2>
+                <button className="close" aria-label="Close Modal" onClick={() => dialogRef.current.close()}>×</button>
               </div>
               <p>{selectedFilm.genre} · Séance de {selectedFilm.time}</p>
               <p className={"availability " + (selectedFilm.available ? "available" : "unavailable")}>
                 {selectedFilm.available ? "Places disponibles" : "Séance complète"}
               </p>
               <p>Consultez la séance et sa disponibilité avant de revenir au programme.</p>
-              <button className="dialog-action" type="button" onClick={() => setSelected(null)}>Revenir aux films</button>
-            </div>
-          </div>
+              <button className="dialog-action" type="button" onClick={() => dialogRef.current.close()}>Revenir aux films</button>
+              <button className="dialog-action" type="button" onClick={() => { setReservation("Reservation pour " + selected + " confirmée"); dialogRef.current.close()}}> Confirmer la réservation</button>
+            </dialog>
         )}
       </main>
     </>
